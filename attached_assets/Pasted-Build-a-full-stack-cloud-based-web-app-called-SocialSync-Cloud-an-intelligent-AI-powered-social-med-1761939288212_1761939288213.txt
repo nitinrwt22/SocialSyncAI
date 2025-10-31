@@ -1,0 +1,77 @@
+Build a full-stack cloud-based web app called SocialSync Cloud, an intelligent AI-powered social media content scheduler and trend analyzer. The app should help users plan, analyze, and optimize their posts using AI insights.
+
+🎯 Project Summary
+The platform allows users to:
+* Write and schedule social media posts in advance.
+* Get AI-generated hashtags and sentiment insights for each post using the Hugging Face API.
+* View analytics and engagement predictions for better posting times.
+* Store all posts and schedules securely on Google Firestore (Firebase).
+* Authenticate using Firebase Auth (Email + Google Login).
+* Be hosted entirely on Firebase + Vercel (cloud deployment).
+
+🧠 Core Features
+1️⃣ User Authentication
+* Firebase Authentication (Email/Password + Google Sign-In).
+* {user choose among  login and register }
+* On login, users are redirected to their personal dashboard.
+* Store basic user profile data in Firestore.
+2️⃣ AI Content Assistant (via Hugging Face API)
+* On the “Create Post” page, users can type or paste their content idea.
+* A button “✨ Analyze & Generate Hashtags” triggers an API call to Hugging Face sentiment-analysis model (distilbert-base-uncased-finetuned-sst-2-english).
+* The app should analyze text sentiment (positive, neutral, or negative) and recommend hashtags automatically (like #AI #Motivation etc.).
+* Display results beautifully with colored sentiment badges and animated hashtag chips.
+3️⃣ Post Scheduler (Firestore Integration)
+* After AI analysis, the user can select a date and time for posting.
+* When clicking “Save Post”, the data (post text, hashtags, sentiment, date/time, user ID) is stored in Firestore.
+* A “My Posts” section lists all scheduled posts with edit/delete options.
+* Show remaining time until scheduled posting (e.g., “Posts in 2 hours”).
+4️⃣ Analytics Dashboard
+* Add a modern, colorful analytics section (use Chart.js or Recharts).
+* Display graphs for:
+    * Number of posts per week
+    * Sentiment distribution (positive/neutral/negative)
+    * Best posting times (based on frequency)
+* Include cards with metrics like “Total Posts”, “Top Hashtag”, “Positive Rate”.
+5️⃣ Cloud Deployment & Backend
+* Store all post data in Firestore (Firebase).
+* All API calls for Hugging Face should be handled via backend routes (Node.js API folder or Firebase Cloud Function).
+* Prepare the app for Firebase Hosting or Vercel deployment.
+
+🎨 Frontend Design & Aesthetic
+* Framework: React (Next.js or Vite)
+* Theme: Modern, vibrant, creative social dashboard
+* Use a colorful palette with soft gradients and animations.
+* Include a sidebar navigation with icons for:
+    * 🏠 Dashboard
+    * 🧠 AI Post Assistant
+    * 📅 Scheduler
+    * 📊 Analytics
+    * ⚙️ Settings
+* Dashboard should greet user (“Welcome back, [Name]”) with an AI-themed hero section and colorful cards showing quick stats.
+* Use animated transitions (Framer Motion or simple fade/slide effects).
+* Make sure the layout is responsive and mobile-friendly.
+
+🧩 Tech Stack
+* Frontend: React + Tailwind CSS (clean and colorful)
+* Backend: Node.js (API routes or Firebase Cloud Functions)
+* Database: Firestore (Firebase)
+* Auth: Firebase Auth
+* AI API: Hugging Face Sentiment + Hashtag Generator (custom logic)
+* Analytics: Chart.js or Recharts
+* Deployment: Vercel / Firebase Hosting (cloud)
+
+🧠 Additional Enhancements
+* Add toast notifications on actions (post saved, deleted, etc.)
+* Display a loader animation while waiting for AI results.
+* Include light/dark theme toggle for better UI polish.
+* Optionally, simulate “post engagement” (likes/comments) data in analytics using dummy Firestore fields to make graphs look more realistic.
+
+📦 Expected Output
+* A beautiful, cloud-ready full-stack web app with:
+    * Authenticated user dashboard
+    * AI-assisted post creation
+    * Firestore integration
+    * Visual analytics
+    * Cloud deployment-ready setup (Firebase config + .env placeholders)
+The goal is to make it feel like a real SaaS platform, but easy to demo in a college cloud computing project environment.
+Name the project folder: socialsync Main dashboard title: “SocialSync — Smart Social Media Scheduler”

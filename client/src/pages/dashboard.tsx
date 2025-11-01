@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
-import { Sparkles, Calendar, TrendingUp, Hash, Plus, Zap } from "lucide-react";
+import { Sparkles, Calendar, TrendingUp, Hash, Plus, Zap, BarChart3 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Post, Analytics } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";

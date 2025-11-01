@@ -9,7 +9,9 @@ const firebaseConfig = {
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
-
+if (!firebaseConfig.apiKey) {
+  throw new Error("Firebase API Key (VITE_FIREBASE_API_KEY) is missing or invalid. Please check your .env file.");
+}
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);

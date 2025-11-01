@@ -1,5 +1,12 @@
-import { type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
+
+// Basic user types for in-memory storage used in examples/tests
+export type User = {
+  id: string;
+  username: string;
+};
+
+export type InsertUser = Omit<User, "id">;
 
 // modify the interface with any CRUD methods
 // you might need

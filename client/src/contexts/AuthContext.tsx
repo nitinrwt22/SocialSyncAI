@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         uid: user.uid,
         email: user.email!,
         displayName: user.displayName || user.email?.split("@")[0] || "User",
-        photoURL: user.photoURL || undefined,
+        ...(user.photoURL && { photoURL: user.photoURL }),
         createdAt: Date.now(),
       };
       await setDoc(userRef, profile);

@@ -260,7 +260,7 @@ export default function CreatePost() {
                       <Label className="mb-3 block">Suggested Hashtags</Label>
                       <div className="flex flex-wrap gap-2 mb-4" data-testid="container-hashtags">
                         <AnimatePresence>
-                          {customHashtags.map((tag, index) => (
+                          {(customHashtags && customHashtags.length > 0) && customHashtags.map((tag, index) => (
                             <motion.div
                               key={tag}
                               initial={{ opacity: 0, scale: 0.8 }}

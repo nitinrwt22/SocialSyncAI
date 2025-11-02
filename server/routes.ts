@@ -1,9 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db, adminAuth } from "./firestore";
-import { analyzeSentiment } from "./ai";
 import { z } from "zod";
 import { postSchema, insertPostSchema, aiAnalysisSchema, type Post, type Analytics } from "@shared/schema";
+import { analyzeSentiment } from "./ai";
+
+
+
+
+
 
 // Middleware to verify Firebase ID token and extract user ID
 async function authenticateUser(req: any, res: any, next: any) {
@@ -49,7 +54,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const analysis = await analyzeSentiment(text);
-      res.json(analysis);
+      // Validate and ensure correct shape
+      const parsed = aiAnalysisSchema.safeParse(analysis);
+      if (!parsed.success) {
+        return res.status(502).json({ error: "Invalid AI analysis response" });
+      }
+      res.json(parsed.data);
     } catch (error) {
       console.error("Analysis error:", error);
       res.status(500).json({ error: "Failed to analyze text" });

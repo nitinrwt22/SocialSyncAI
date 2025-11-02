@@ -1,21 +1,20 @@
-import { initializeApp, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
+import admin from "firebase-admin";
 
-// Initialize Firebase Admin with Application Default Credentials
-// In production, this uses service account or Workload Identity
-// For development/Replit, we'll use the emulator or rely on the project ID
-if (getApps().length === 0) {
+// Initialize Firebase Admin once
+if (!admin.apps.length) {
   try {
-    // Try to initialize with default credentials
-    initializeApp({
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      }),
     });
+    console.log("🔥 Firebase Admin connected successfully");
   } catch (error) {
-    console.error("Firebase Admin initialization error:", error);
-    // Continue anyway - Firestore client will handle auth
+    console.error("❌ Firebase Admin initialization failed:", error);
   }
 }
 
-export const db = getFirestore();
-export const adminAuth = getAuth();
+export const db = admin.firestore();
+export const adminAuth = admin.auth();

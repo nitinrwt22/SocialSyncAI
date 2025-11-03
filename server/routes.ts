@@ -71,15 +71,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.userId;
 
+      // Avoid excluding docs that may not have `scheduledFor` and avoid composite index requirement
       const postsSnapshot = await db
         .collection("posts")
         .where("userId", "==", userId)
-        .orderBy("scheduledFor", "desc")
         .get();
 
       const posts: Post[] = [];
       postsSnapshot.forEach((doc) => {
         posts.push({ id: doc.id, ...doc.data() } as Post);
+      });
+
+      // Sort newest first using scheduledFor, then createdAt
+      posts.sort((a, b) => {
+        const aKey = (a as any).scheduledFor ?? (a as any).createdAt ?? 0;
+        const bKey = (b as any).scheduledFor ?? (b as any).createdAt ?? 0;
+        return bKey - aKey;
       });
 
       res.json(posts);

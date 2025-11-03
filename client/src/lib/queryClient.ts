@@ -15,10 +15,11 @@ async function getHeaders(includeContentType: boolean = false) {
     headers["Content-Type"] = "application/json";
   }
   
-  // Add user ID header if authenticated
+  // Add Firebase ID token in Authorization header
   const user = auth.currentUser;
   if (user) {
-    headers["x-user-id"] = user.uid;
+    const idToken = await user.getIdToken();
+    headers["Authorization"] = `Bearer ${idToken}`;
   }
   
   return headers;
@@ -69,7 +70,8 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      staleTime: 0,
+      gcTime: 5 * 60 * 1000, // 5 minutes
       retry: false,
     },
     mutations: {

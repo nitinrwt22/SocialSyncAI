@@ -96,32 +96,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new post
-  app.post("/api/posts", authenticateUser, async (req: any, res) => {
-    try {
-      const userId = req.userId;
-      const postData = insertPostSchema.parse(req.body);
-      
-      const now = Date.now();
-      const post = {
-        ...postData,
-        userId,
-        createdAt: now,
-        updatedAt: now,
-      };
+ app.post("/api/posts", authenticateUser, async (req: any, res) => {
+  try {
+    const userId = req.userId;
+    const postData = insertPostSchema.parse(req.body);
+    const now = Date.now();
 
-      const docRef = await db.collection("posts").add(post);
-      const newPost: Post = { id: docRef.id, ...post };
+    const scheduledFor = Number(postData.scheduledFor) || now;
+    const status: "scheduled" | "posted" = scheduledFor > now ? "scheduled" : "posted";
 
-      res.status(201).json(newPost);
-    } catch (error) {
-      console.error("Create post error:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid post data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create post" });
+    const newPost: Post = {
+      id: "",
+      userId,
+      content: postData.content || "",
+      hashtags: postData.hashtags || [],
+      sentiment: postData.sentiment || "neutral",
+      sentimentScore: postData.sentimentScore || 0.5,
+      scheduledFor,
+      status,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const docRef = await db.collection("posts").add(newPost);
+    newPost.id = docRef.id;
+
+    res.status(201).json(newPost);
+  } catch (error) {
+    console.error("Create post error:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid post data", details: error.errors });
     }
-  });
+    res.status(500).json({ error: "Failed to create post" });
+  }
+});
+
 
   // Delete a post
   app.delete("/api/posts/:id", authenticateUser, async (req: any, res) => {

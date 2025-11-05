@@ -4,35 +4,37 @@ import { getAuth } from "firebase/auth";
 
 export default function CreatePost() {
   const [text, setText] = useState("");
-  const [scheduledFor, setScheduledFor] = useState(""); // new state for scheduling
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ sentiment?: string; hashtags?: string[] }>({});
+  const [mode, setMode] = useState<"now" | "schedule">("now");
+  const [scheduledTime, setScheduledTime] = useState("");
 
   const handlePost = async () => {
     if (!text.trim()) return alert("⚠️ Please write something before posting!");
     setLoading(true);
 
     try {
-      // 🔐 Get Firebase Auth Token
       const user = getAuth().currentUser;
       const token = user ? await user.getIdToken() : null;
 
-      // 🧠 Step 1: Analyze sentiment via backend (HuggingFace)
+      // 🧠 Analyze the post first
       const analysisRes = await axios.post("/api/analyze", { text });
       const { sentiment, suggestedHashtags } = analysisRes.data;
 
-      // 🕒 Step 2: Save post in Firestore through backend route
+      // ⏰ Determine scheduled time
+      const scheduledFor =
+        mode === "schedule" && scheduledTime
+          ? new Date(scheduledTime).getTime()
+          : Date.now();
+
+      // ☁️ Save post
       await axios.post(
         "/api/posts",
         {
-          content: text,
+          content:text,
           sentiment,
-          sentimentScore: 0.5, // can update if you store it
           hashtags: suggestedHashtags,
-          scheduledFor: scheduledFor
-            ? new Date(scheduledFor).getTime()
-            : Date.now(), // default: now
-          status: scheduledFor ? "scheduled" : "posted", // 👈 mark as scheduled
+          scheduledFor,
         },
         {
           headers: {
@@ -43,7 +45,7 @@ export default function CreatePost() {
 
       setResult({ sentiment, hashtags: suggestedHashtags });
       setText("");
-      setScheduledFor("");
+      setScheduledTime("");
       alert("✅ Post created successfully!");
     } catch (err) {
       console.error(err);
@@ -55,11 +57,8 @@ export default function CreatePost() {
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white rounded-2xl shadow-lg">
-      <h2 className="text-3xl font-extrabold mb-4 text-center">
-        ✨ Create AI-Enhanced Post
-      </h2>
+      <h2 className="text-3xl font-extrabold mb-4 text-center">✨ Create AI-Enhanced Post</h2>
 
-      {/* ✍️ Post Text */}
       <textarea
         className="w-full text-black rounded-lg p-3 resize-none focus:outline-none"
         rows={5}
@@ -68,16 +67,36 @@ export default function CreatePost() {
         onChange={(e) => setText(e.target.value)}
       ></textarea>
 
-      {/* 🗓️ Schedule Input */}
-      <div className="mt-4">
-        <label className="block text-sm mb-2">Schedule for (optional):</label>
+      {/* ✅ Post Type Selection */}
+      <div className="mt-4 flex gap-4 items-center">
+        <label>
+          <input
+            type="radio"
+            value="now"
+            checked={mode === "now"}
+            onChange={() => setMode("now")}
+          />{" "}
+          Post Now
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="schedule"
+            checked={mode === "schedule"}
+            onChange={() => setMode("schedule")}
+          />{" "}
+          Schedule Later
+        </label>
+      </div>
+
+      {mode === "schedule" && (
         <input
           type="datetime-local"
-          value={scheduledFor}
-          onChange={(e) => setScheduledFor(e.target.value)}
-          className="w-full p-2 rounded-lg text-black"
+          value={scheduledTime}
+          onChange={(e) => setScheduledTime(e.target.value)}
+          className="mt-3 w-full text-black p-2 rounded"
         />
-      </div>
+      )}
 
       <button
         onClick={handlePost}

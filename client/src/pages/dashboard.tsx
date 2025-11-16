@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Post, Analytics } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
+
 export default function Dashboard() {
   const { userProfile } = useAuth();
   const [greeting, setGreeting] = useState("");
@@ -141,6 +142,9 @@ export default function Dashboard() {
           ))}
         </motion.div>
 
+        {/* Trending Section */}
+        <TrendingSection />
+
         {/* Recent Posts */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -224,6 +228,108 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+type TrendingTopic = {
+  title: string;
+  url: string;
+  description: string | null;
+  source: string;
+};
+
+function TrendingSection() {
+  const [topics, setTopics] = useState<TrendingTopic[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedCaption, setGeneratedCaption] = useState<string>("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/trending", { cache: "no-store" });
+        if (!res.ok) {
+          setTopics([]);
+          setIsLoading(false);
+          return;
+        }
+        const data = (await res.json()) as TrendingTopic[];
+        setTopics(data ?? []);
+      } catch (error) {
+        console.error("Trending fetch error (frontend):", error);
+        setTopics([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  async function handleGenerateCaption(topic: string) {
+    setIsGenerating(true);
+    setGeneratedCaption("");
+
+    try {
+      const res = await fetch("/api/generate-caption", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic }),
+      });
+      const data = (await res.json()) as { caption?: string; error?: string };
+      setGeneratedCaption(data.caption || data.error || "No caption generated.");
+    } catch (error) {
+      console.error("Generate caption error (frontend):", error);
+      setGeneratedCaption("⚠️ Failed to generate caption.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  return (
+    <div className="mt-8 p-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl text-white shadow-lg">
+      <h2 className="text-2xl font-bold mb-4">🔥 Trending Now</h2>
+      {isLoading ? (
+        <p>Loading latest social trends...</p>
+      ) : topics.length === 0 ? (
+        <p>No trends available right now.</p>
+      ) : (
+        <ul className="space-y-6">
+          {topics.map((t, i) => (
+            <li key={i} className="border-b border-white/20 pb-3">
+              <a
+                href={t.url}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:underline font-semibold block"
+              >
+                {t.title}
+              </a>
+              {t.description && (
+                <p className="text-sm opacity-80 mt-1">{t.description}</p>
+              )}
+              <p className="text-xs mt-1">Source: {t.source}</p>
+
+              <button
+                type="button"
+                onClick={() => handleGenerateCaption(t.title)}
+                disabled={isGenerating}
+                className="mt-2 px-3 py-1 bg-white text-indigo-600 font-semibold rounded hover:bg-gray-200 transition disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isGenerating ? "✨ Generating..." : "🧠 Generate Caption"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {generatedCaption && (
+        <div className="mt-6 bg-white/20 p-4 rounded-lg">
+          <h3 className="text-xl font-bold mb-2">🪄 Suggested Caption</h3>
+          <p className="italic whitespace-pre-line">{generatedCaption}</p>
+        </div>
+      )}
     </div>
   );
 }

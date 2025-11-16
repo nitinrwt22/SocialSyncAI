@@ -1,14 +1,16 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { db, adminAuth } from "./firestore";
 import { z } from "zod";
 import { postSchema, insertPostSchema, aiAnalysisSchema, type Post, type Analytics } from "@shared/schema";
 import { analyzeSentiment } from "./ai";
+import { fetchTrendingTopics } from "./trends";
+import { HfInference } from "@huggingface/inference";
 
-
-
-
-
+// Hugging Face client for caption generation
+const HF_TOKEN_CAPTION =
+  process.env.VITE_HUGGING_FACE_API_KEY || process.env.HUGGING_FACE_API_KEY;
+const hfCaption = new HfInference(HF_TOKEN_CAPTION);
 
 // Middleware to verify Firebase ID token and extract user ID
 async function authenticateUser(req: any, res: any, next: any) {
@@ -45,6 +47,95 @@ async function authenticateUser(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // 🗞 Trending Topics Endpoint
+  app.get("/api/trending", async (_req: Request, res: Response) => {
+    try {
+      const topics = await fetchTrendingTopics();
+      // Avoid aggressive caching so the client doesn't get 304 + empty body
+      res.set("Cache-Control", "no-store");
+      res.json(topics);
+    } catch (error) {
+      console.error("Trending fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch trending topics" });
+    }
+  });
+
+  // 🧠 Generate AI Caption for a given topic
+  app.post("/api/generate-caption", async (req: Request, res: Response) => {
+    try {
+      const { topic } = req.body as { topic?: string };
+      if (!topic) {
+        return res.status(400).json({ error: "Topic is required" });
+      }
+
+      const prompt = `Write a short, catchy social media caption about ${topic}.\nMake it engaging and include relevant hashtags.`;
+
+      if (!HF_TOKEN_CAPTION) {
+        // Return a local fallback caption when no HF key is set
+        const fallback = `Thinking about ${topic}? Here's your chance to share something amazing today! #${topic
+          .replace(/\s+/g, "")
+          .slice(0, 20)} #content`;
+        return res.json({ caption: fallback });
+      }
+
+      let data: any;
+      try {
+        data = await hfCaption.textGeneration({
+          model: "gpt2",
+          inputs: prompt,
+          parameters: {
+            max_new_tokens: 60,
+            temperature: 0.8,
+            top_p: 0.95,
+            do_sample: true,
+          },
+        });
+        console.log("🔍 HF response for caption:", JSON.stringify(data));
+      } catch (hfError: any) {
+        console.error("HF SDK error:", hfError?.message || hfError);
+        // Fall back to a simple caption when HF fails
+        const fallback = `Thinking about ${topic}? Here's your chance to share something amazing today! #${topic
+          .replace(/\s+/g, "")
+          .slice(0, 20)} #content`;
+        return res.json({ caption: fallback });
+      }
+
+      let caption: string | undefined;
+      if (Array.isArray(data)) {
+        caption = data[0]?.generated_text;
+      } else if (data && typeof data === "object") {
+        caption = (data as any).generated_text;
+      }
+
+      if (!caption) {
+        // If HF returns an error object, surface it
+        if (data && typeof data === "object" && (data.error || data.message)) {
+          console.error("HF caption error payload:", data);
+          const fallback = `Thinking about ${topic}? Here's your chance to share something amazing today! #${topic
+            .replace(/\s+/g, "")
+            .slice(0, 20)} #content`;
+          return res.json({ caption: fallback });
+        } else {
+          const fallback = `Thinking about ${topic}? Here's your chance to share something amazing today! #${topic
+            .replace(/\s+/g, "")
+            .slice(0, 20)} #content`;
+          return res.json({ caption: fallback });
+        }
+      }
+
+      res.json({ caption });
+    } catch (error: any) {
+      console.error("AI caption error (outer):", error?.message || error);
+      const { topic } = req.body as { topic?: string };
+      const fallback = topic
+        ? `Thinking about ${topic}? Here's your chance to share something amazing today! #${topic
+            .replace(/\s+/g, "")
+            .slice(0, 20)} #content`
+        : "Something went wrong, but here's a caption for you anyway! #content";
+      res.status(500).json({ caption: fallback });
+    }
+  });
+
   // AI Analysis endpoint (no auth required for analysis)
   app.post("/api/analyze", async (req, res) => {
     try {

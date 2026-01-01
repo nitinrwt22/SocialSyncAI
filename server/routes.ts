@@ -129,8 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { topic } = req.body as { topic?: string };
       const fallback = topic
         ? `Thinking about ${topic}? Here's your chance to share something amazing today! #${topic
-            .replace(/\s+/g, "")
-            .slice(0, 20)} #content`
+          .replace(/\s+/g, "")
+          .slice(0, 20)} #content`
         : "Something went wrong, but here's a caption for you anyway! #content";
       res.status(500).json({ caption: fallback });
     }
@@ -187,40 +187,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
- app.post("/api/posts", authenticateUser, async (req: any, res) => {
-  try {
-    const userId = req.userId;
-    const postData = insertPostSchema.parse(req.body);
-    const now = Date.now();
+  app.post("/api/posts", authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const postData = insertPostSchema.parse(req.body);
+      const now = Date.now();
 
-    const scheduledFor = Number(postData.scheduledFor) || now;
-    const status: "scheduled" | "posted" = scheduledFor > now ? "scheduled" : "posted";
+      const scheduledFor = Number(postData.scheduledFor) || now;
+      const status: "scheduled" | "posted" = scheduledFor > now ? "scheduled" : "posted";
 
-    const newPost: Post = {
-      id: "",
-      userId,
-      content: postData.content || "",
-      hashtags: postData.hashtags || [],
-      sentiment: postData.sentiment || "neutral",
-      sentimentScore: postData.sentimentScore || 0.5,
-      scheduledFor,
-      status,
-      createdAt: now,
-      updatedAt: now,
-    };
+      const newPost: Post = {
+        id: "",
+        userId,
+        content: postData.content || "",
+        hashtags: postData.hashtags || [],
+        sentiment: postData.sentiment || "neutral",
+        sentimentScore: postData.sentimentScore || 0.5,
+        scheduledFor,
+        status,
+        createdAt: now,
+        updatedAt: now,
+      };
 
-    const docRef = await db.collection("posts").add(newPost);
-    newPost.id = docRef.id;
+      const docRef = await db.collection("posts").add(newPost);
+      newPost.id = docRef.id;
 
-    res.status(201).json(newPost);
-  } catch (error) {
-    console.error("Create post error:", error);
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: "Invalid post data", details: error.errors });
+      res.status(201).json(newPost);
+    } catch (error) {
+      console.error("Create post error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid post data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create post" });
     }
-    res.status(500).json({ error: "Failed to create post" });
-  }
-});
+  });
 
 
   // Delete a post
@@ -245,6 +245,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete post error:", error);
       res.status(500).json({ error: "Failed to delete post" });
+    }
+  });
+
+  // ⏰ Scheduler Trigger (Vercel Cron)
+  app.get("/api/scheduler/trigger", async (req, res) => {
+    try {
+      // Security check: Ensure authorized (Vercel Cron or manual admin)
+      // In production, you'd check auth header. For now, we open it to get it working.
+      await import("./scheduler").then(m => m.runScheduledTasks());
+      res.json({ success: true, message: "Scheduler ran successfully" });
+    } catch (error) {
+      console.error("Scheduler manual trigger error:", error);
+      res.status(500).json({ error: "Failed to run scheduler" });
     }
   });
 

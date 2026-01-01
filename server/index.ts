@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
-import { startScheduler } from "./scheduler.js"; // ✅ added
+// import { startScheduler } from "./scheduler.js"; // ❌ removed for Vercel
 
 const app = express();
 
@@ -72,7 +72,8 @@ app.use((req, res, next) => {
   }
 
   // ✅ Start Scheduler (Auto-publish posts)
-  startScheduler();
+  // ✅ Start Scheduler (Removed for Vercel Cron)
+  // startScheduler();
 
   // ✅ Use only process.env.PORT (Replit-compatible)
   const PORT = parseInt(process.env.PORT || "5051", 10);

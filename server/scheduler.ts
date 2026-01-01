@@ -13,7 +13,7 @@ export function startScheduler() {
       const snapshot = await db
         .collection("posts")
         .where("status", "==", "scheduled")
-        .where("scheduledFor", "<=", now)
+      .where("scheduledFor", "<=", now)
         .get();
 
       if (snapshot.empty) return;
